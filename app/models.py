@@ -1,8 +1,13 @@
 from datetime import datetime
+from flask_login import UserMixin
+from werkzeug.security import check_password_hash
+from werkzeug.security import generate_password_hash
 
 from app import db
+from app import login
 
-class User(db.Model):
+
+class User(UserMixin, db.Model):
     """
     User model
     """
@@ -11,6 +16,18 @@ class User(db.Model):
     email = db.Column(db.String(120), index=True, unique=True)
     password_hash = db.Column(db.String(128))
     posts = db.relationship('Post', backref='author', lazy='dynamic')
+
+    def set_password(self, password):
+        """
+        Hash user password
+        """
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        """
+        Validate user password
+        """
+        return check_password_hash(self.password_hash, password)
 
     def __repr__(self):
         """
@@ -32,3 +49,8 @@ class Post(db.Model):
         Representaion of a Post instance
         """
         return '<Post {}>'.format(self.body)
+
+
+@login.user_loader
+def loader_user(id):
+    return User.query.get(int(id))
